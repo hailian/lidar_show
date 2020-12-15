@@ -28,6 +28,10 @@ MainWindow::MainWindow(QWidget *parent)
     pen2.setColor(QColor(0, 0, 255));
     pen2.setWidth(1);
 
+    QPen pen3;
+    pen3.setColor(QColor(255, 0, 0));
+    pen3.setWidth(1);
+
     m_polygonItem = new QGraphicsPolygonItem();   // 定义一个多边形图元
     QPolygonF polygon;
     polygon << QPointF(-100.0, -150.0) << QPointF(-120.0, 150.0)
@@ -46,34 +50,51 @@ MainWindow::MainWindow(QWidget *parent)
     m_polygonItem2->setPen(pen2);
     m_polygonItem2->setFlag(QGraphicsItem::ItemIsMovable);
 
+    m_polygonItem3 = new QGraphicsPolygonItem();
+    QPolygonF polygon3;
+    polygon3 << QPointF(-100.0, -150.0)
+            //<< QPointF(-120.0, 150.0)
+            << QPointF(220.0, -140.0)
+            << QPointF(320.0, 160.0) ;//
+    m_polygonItem3->setPolygon(polygon3);
+    m_polygonItem3->setPen(pen3);
+    m_polygonItem3->setFlag(QGraphicsItem::ItemIsMovable);
+
 
     scene->addItem(m_polygonItem);
     scene->addItem(m_polygonItem2);
-
-
+    scene->addItem(m_polygonItem3);
 
     auto mainView = new QGraphicsView(scene);
     //mainView->resize(800, 600);
 
     auto testBtn = new QPushButton;
     connect(testBtn,&QAbstractButton::pressed,[&](){
+        QPointF pA(60.363108246330995,35.30580956282788);
+        QPointF pB(50.910778473302884,-85.3258593488451);
 
-        QPolygonF polygon = m_polygonItem->polygon();
-        polygon.clear();
+        QPointF p1(263.9393092522702, 82.32398613379988);
+        QPointF p2(264.2960017472896, 81.17155364978728);
+        QPointF p3(262.5807537715334, 69.48941144874537);
+        QPointF p4(117.93954061554737, 21.48207461609419);
 
-//        polygon << QPointF(-200.0, -150.0) << QPointF(-220.0, 150.0)
-//                << QPointF(220.0, 160.0) << QPointF(120.0, -140.0);
-//        m_polygonItem->setPolygon(polygon);
+        RightOfLine(p1,pA,pB);
+        RightOfLine(p2,pA,pB);
+        RightOfLine(p3,pA,pB);
+        RightOfLine(p4,pA,pB);
 
-        std::vector<QPointF> ps;
-        ps.push_back(QPointF(-100.0, -150.0));
-        //ps.push_back(QPointF(-120.0, 150.0));
-        ps.push_back(QPointF(220.0, -140.0));
-        ps.push_back(QPointF(320.0, 160.0));
+//        QPolygonF polygon = m_polygonItem->polygon();
+//        polygon.clear();
 
-        this->removePoints(ps,0,ps.size()-1);
+//        std::vector<QPointF> ps;
+//        ps.push_back(QPointF(-100.0, -150.0));
+//        ps.push_back(QPointF(-120.0, 150.0));
+//        //ps.push_back(QPointF(220.0, -140.0));
+//        ps.push_back(QPointF(320.0, 160.0));
 
-        qDebug()<<ps.size();
+//        this->removePoints(ps,0,ps.size()-1);
+
+//        qDebug()<<ps.size();
 
     });
     testBtn->setText("test");
@@ -94,10 +115,14 @@ MainWindow::~MainWindow()
 void MainWindow::showLidar(std::vector<float> datas)
 {
     QPolygonF polygon = m_polygonItem->polygon();
+    QPolygonF polygon2 = m_polygonItem2->polygon();
+    QPolygonF polygon3 = m_polygonItem3->polygon();
     polygon.clear();
+    polygon2.clear();
+    polygon3.clear();
     const int bigSize = datas.size()/360;
 
-    int pixMeter = 135;
+    int pixMeter = 120;
     int nums = datas.size();
     double offset = - 3.1415926 / 2 - 0.01;
 #if 1
@@ -113,64 +138,56 @@ void MainWindow::showLidar(std::vector<float> datas)
 
         if(datas[i] != 0){
             ps.push_back(QPointF(pos_x,pos_y));
+            polygon <<QPointF(pos_x,pos_y);
         }
-
-        polygon <<QPointF(pos_x,pos_y);
     }
     polygon <<QPointF(0,0);
 
+    qDebug()<<"begin_size = "<<ps.size();
+
     //blue
-    qDebug()<<"begin "<< ps.size();
-    //this->removePoints(ps,ps.size()/2,ps.size()-1);
 
-    if(ps.size()<3){
-        return;
+    std::vector<QPointF> ps_red;
+    //removePoints(ps,0,ps.size()-1,ps_red);
+
+    for(int loop = 0;loop<3;loop++)
+    {
+        ps_red.clear();
+        removePoints(ps,0,ps.size()/3,ps_red);
+        removePoints(ps,ps.size()/3,ps.size()*2/3,ps_red);
+        removePoints(ps,ps.size()*2/3,ps.size()-1,ps_red);
+        if(ps_red.size()>7)
+        {
+            ps_red.erase(ps_red.begin());
+            ps_red.erase(ps_red.begin());
+            ps_red.erase(ps_red.begin());
+            ps_red.erase(ps_red.begin());
+        }
+        ps = ps_red;
     }
 
-//    for(auto it = ps.begin();it!=ps.end();it++)
-//    {
-//        i++;
-////        if(it->x() == 0 && it->y() == 0)
-////        {
-////            it = ps.erase(it);
-////            continue;
-////        }
-//    }
-
-    int pos_center = 0;
-    int loop_size = 5;
 
 
-    for(int i =0;i<loop_size;i++){
-        pos_center = ps.size()/2;
-        this->removePoints(ps,1,ps.size()/5);
-        this->removePoints(ps,ps.size()/5+1,ps.size()/5 *2);
-        this->removePoints(ps,ps.size()/5*2+1,ps.size()/5 *3);
-        this->removePoints(ps,ps.size()/5*3+1,ps.size()/5 *4);
-        this->removePoints(ps,ps.size()/5*4+1,ps.size() -2);
-    }
-
-//    while(ps.size()>12){
-//        this->removePoints(ps,0,ps.size()/5);
-//        this->removePoints(ps,ps.size()/5+1,ps.size()/5 *2);
-//        this->removePoints(ps,ps.size()/5*2+1,ps.size()/5 *3);
-//        this->removePoints(ps,ps.size()/5*3+1,ps.size()/5 *4);
-//        this->removePoints(ps,ps.size()/5*4+1,ps.size() -1);
-//    }
-
-    this->removePoints(ps,2,ps.size() -2);
-
-    qDebug()<<"end "<< ps.size();
-
-    QPolygonF polygon2 = m_polygonItem2->polygon();
-    polygon2.clear();
-    //for(auto it = ps.begin()+ ps.size()/2;it!=ps.end();it++)
     for(auto it = ps.begin();it!=ps.end();it++)
     {
-        polygon2 << *it;
-
+        polygon2 <<*it;
     }
     polygon2 <<QPointF(0,0);
+    qDebug()<<"ps_size = "<<ps.size();
+
+    //ps_red.reserve(ps_red.size());
+//    ps.reserve(ps.size());
+//    ps_red.clear();
+//    removePoints(ps,0,ps.size()-1,ps_red);
+
+    for(auto it = ps_red.begin();it!=ps_red.end();it++)
+    {
+        polygon3 <<*it;
+    }
+    polygon3 <<QPointF(0,0);
+
+    qDebug()<<"red_size = "<<ps_red.size();
+
 #else
     //pixMeter = 1;
     double delta = 60;
@@ -204,6 +221,7 @@ void MainWindow::showLidar(std::vector<float> datas)
 
     m_polygonItem->setPolygon(polygon);
     m_polygonItem2->setPolygon(polygon2);
+    m_polygonItem3->setPolygon(polygon3);
 }
 
 void MainWindow::calcPoints(QPointF p1,QPointF p2,double &a,double &b)
@@ -212,41 +230,43 @@ void MainWindow::calcPoints(QPointF p1,QPointF p2,double &a,double &b)
     b = p2.y() - a * p2.x() ;
 }
 
-void MainWindow::removePoints(std::vector<QPointF> &ps,int begin,int end)
+bool MainWindow::RightOfLine(const QPointF & pP, const QPointF& pA, const QPointF& pB)
 {
-    int pos_head = begin;
-    int pos_tail = end;
+    const double nSize = 1;
+    QPointF PA((pA.x()-pP.x())/nSize,(pA.y()-pP.y())/nSize);
+    QPointF PB((pB.x()-pP.x())/nSize,(pB.y()-pP.y())/nSize);
 
-    double a=0,b=0;
-    calcPoints(ps[pos_head],ps[pos_tail],a,b);
-    if(std::isnan(a)|| std::isnan(b)){
+    double val = PA.x()*PB.y() - PA.y()*PB.x();
+
+    if(val > 0)// >0 right
+        return true;
+    return false;
+}
+
+void MainWindow::removePoints(std::vector<QPointF> &ps,int begin,int end,std::vector<QPointF> &psRes)
+{
+    if(begin >=end){
         return;
     }
 
-    qDebug()<<"a = "<<a << ",b = " << b;
+    int pos_head = begin;
+    int pos_tail = end;
 
-    auto it = ps.begin() + pos_head + 1;
+    QPointF p1 = ps[begin];
+    QPointF p2 = ps[end];
+
+    auto it = ps.begin() + pos_head;
     auto it_end = ps.begin() + pos_tail ;
-    double tmp_y;
+
     for(;it!=it_end;it++)
     {
-        tmp_y = a * it->x() + b;
-        //a = a-0.17;
-        if(a > 0){
-            if(tmp_y > it->y())// upper
-            {
-                it = ps.erase(it);
-                continue;
-            }
-
+        if(RightOfLine(*it,p1,p2))
+        {
+//            it = ps.erase(it);
+//            continue;
         }else{
-            if(tmp_y < it->y())// upper
-            {
-                it = ps.erase(it);
-                continue;
-            }
+            psRes.push_back(*it);
         }
-
     }
 }
 
