@@ -1,6 +1,6 @@
 QT       += core gui
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets network
 
 CONFIG += c++11
 
@@ -10,10 +10,12 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    udpreceiver.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    udpreceiver.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
